@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -9,6 +9,13 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem('token') || null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  const logout = useCallback(() => {
+    localStorage.removeItem('token');
+    setToken(null);
+    setUser(null);
+    navigate('/login');
+  }, [navigate]);
 
   // Initialize auth state
   useEffect(() => {
@@ -28,7 +35,7 @@ export function AuthProvider({ children }) {
     };
 
     verifyToken();
-  }, [token]);
+  }, [token, logout]);
 
   const login = async (credentials) => {
     try {
@@ -52,13 +59,6 @@ export function AuthProvider({ children }) {
     } catch (error) {
       return { success: false, error: error.response?.data?.message || 'Registration failed' };
     }
-  };
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
-    navigate('/login');
   };
 
   const value = {
