@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { login as loginAPI, refreshToken as refreshTokenAPI } from '../api/authAPI';
+import { api } from '../api';
 
 const AuthContext = createContext();
 
@@ -22,7 +23,7 @@ export function AuthProvider({ children }) {
     const verifyToken = async () => {
       try {
         if (token) {
-          const { data } = await axios.get('/api/auth/verify', {
+          const { data } = await api.get('/auth/verify', {
             headers: { Authorization: `Bearer ${token}` }
           });
           setUser(data.user);
@@ -39,25 +40,37 @@ export function AuthProvider({ children }) {
 
   const login = async (credentials) => {
     try {
-      const { data } = await axios.post('/api/auth/login', credentials);
+      const data = await loginAPI(credentials);
       localStorage.setItem('token', data.token);
       setToken(data.token);
       setUser(data.user);
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.response?.data?.message || 'Login failed' };
+      return { success: false, error: error.message || 'Login failed' };
     }
   };
 
   const register = async (userData) => {
     try {
-      const { data } = await axios.post('/api/auth/register', userData);
+      const data = await loginAPI(userData);
       localStorage.setItem('token', data.token);
       setToken(data.token);
       setUser(data.user);
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.response?.data?.message || 'Registration failed' };
+      return { success: false, error: error.message || 'Registration failed' };
+    }
+  };
+
+  const refreshToken = async () => {
+    try {
+      const newToken = await refreshTokenAPI();
+      localStorage.setItem('token', newToken);
+      setToken(newToken);
+      return newToken;
+    } catch (error) {
+      logout();
+      throw error;
     }
   };
 
@@ -68,6 +81,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
+    refreshToken,
     isAuthenticated: !!token
   };
 
